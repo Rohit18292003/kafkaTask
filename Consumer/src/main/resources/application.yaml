@@ -1,3 +1,33 @@
 spring:
   application:
     name: Consumer
+  datasource:
+    url: ${CONSUMER_DATABASE_URL:jdbc:postgresql://localhost:5432/webseries_consumer_db}
+    username: ${CONSUMER_DATABASE_USERNAME:postgres}
+    password: ${CONSUMER_DATABASE_PASSWORD:tiger}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: webseries-consumer-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+
+consumer:
+  validation:
+    allow-update-on-modified-event: ${CONSUMER_ALLOW_UPDATE_ON_MODIFIED_EVENT:true}
+  kafka:
+    topics:
+      webseries: webseries-info
+      season: season-info
+      episode: episode-info
+    retry:
+      interval-ms: 1000
+      max-attempts: 3
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
