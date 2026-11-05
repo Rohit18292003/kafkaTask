@@ -1,3 +1,40 @@
 spring:
   application:
-    name: Producer
+    name: webseries-producer
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/webseries_db
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update        # dev only; switch to validate + Flyway for prod
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+# Producer-owned Kafka settings
+app:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      enable-idempotence: true
+      retries: 5
+      delivery-timeout-ms: 30000
+      request-timeout-ms: 10000
+      linger-ms: 5
+    publish-timeout-seconds: 10     # how long the publish API waits for the broker ack
+    topics:
+      partitions: 3
+      replicas: 1
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+server:
+  port: 8081
