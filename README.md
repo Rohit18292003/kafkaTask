@@ -24,6 +24,9 @@ The Consumer persists events from `webseries-info`, `season-info`, and
 `episode-info` in its own `webseries_consumer_db` database. It exposes
 read-only lookup endpoints under `/api/webseries/{id}`, `/api/seasons/{id}`,
 and `/api/episodes/{id}`. Swagger UI is available at `/swagger-ui.html`.
+See [Consumer Service Guide](Consumer/CONSUMER-DOCUMENTATION.md) for the Kafka
+topics, event JSON formats, retry and dead-letter handling, database behavior,
+API details, and configuration.
 
 Start the Consumer together with its PostgreSQL and Kafka dependencies from the
 `Consumer` directory:
