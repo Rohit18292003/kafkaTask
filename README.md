@@ -18,28 +18,62 @@ Use `.\mvnw.cmd package` to create the Consumer JAR under `Consumer\target`.
 The existing Producer module can still be built independently with
 `cd Producer` followed by `.\mvnw.cmd clean test`.
 
-## Consumer service
+## Run PostgreSQL for the Producer
 
-The Consumer persists events from `webseries-info`, `season-info`, and
-`episode-info` in its own `webseries_consumer_db` database. It exposes
-read-only lookup endpoints under `/api/webseries/{id}`, `/api/seasons/{id}`,
-and `/api/episodes/{id}`. Swagger UI is available at `/swagger-ui.html`.
-See [Consumer Service Guide](Consumer/CONSUMER-DOCUMENTATION.md) for the Kafka
-topics, event JSON formats, retry and dead-letter handling, database behavior,
-API details, and configuration.
-
-Start the Consumer together with its PostgreSQL and Kafka dependencies from the
-`Consumer` directory:
+The Producer's `docker-compose.yaml` starts PostgreSQL 16 on host port `5433`
+(container port `5432`), avoiding a conflict with a locally installed
+PostgreSQL server. The database is `webseries_db`, with the default `postgres`
+username/password expected by the application. Start it from the `Producer`
+directory:
 
 ```powershell
-docker compose up --build
+cd Producer
+docker compose up -d postgres
 ```
 
-For a locally running Consumer, start only the dependencies with
-`docker compose up postgres kafka` and then use `.\mvnw.cmd spring-boot:run`.
-Database and Kafka addresses can be overridden with `CONSUMER_DATABASE_URL`,
-`CONSUMER_DATABASE_USERNAME`, `CONSUMER_DATABASE_PASSWORD`, and
-`KAFKA_BOOTSTRAP_SERVERS`. Modified events update existing records by default;
-set `CONSUMER_ALLOW_UPDATE_ON_MODIFIED_EVENT=false` to reject all existing IDs.
+Once the container is healthy, start the Producer with
+`.\mvnw.cmd spring-boot:run`. Stop PostgreSQL with `docker compose down`; its
+data remains in the `postgres_data` volume.
 
-The Testcontainers integration tests are skipped when Docker is unavailable.
+The Producer API documentation is available at
+`http://localhost:8081/swagger-ui.html`; the OpenAPI JSON is at
+`http://localhost:8081/v3/api-docs`. Swagger lists the web series, season, and
+episode endpoints, request validation, response codes, and Kafka publish
+results.
+
+## Producer database ER diagram
+
+```mermaid
+erDiagram
+    WEB_SERIES ||--o{ SEASONS : contains
+    SEASONS ||--o{ EPISODES : contains
+
+    WEB_SERIES {
+        UUID id PK
+        string title
+        string description
+        int release_year
+        timestamp created_at
+    }
+
+    SEASONS {
+        UUID id PK
+        UUID web_series_id FK
+        int season_number
+        string title
+        timestamp created_at
+    }
+
+    EPISODES {
+        UUID id PK
+        UUID season_id FK
+        int episode_number
+        string title
+        int duration_minutes
+        timestamp created_at
+    }
+```
+
+The Producer database enforces `UNIQUE(web_series_id, season_number)` on
+`seasons` and `UNIQUE(season_id, episode_number)` on `episodes`. Add indexes
+on `seasons.web_series_id` and `episodes.season_id` for the foreign keys.
